@@ -1,10 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcryptjs");
-const cryptoJS = require("crypto-js");
 
-let { bruteForceCrack, dictionaryAttack } = require("./methods"); // Import your methods
+const { bruteForceCrack, dictionaryAttack } = require("./methods"); // Import cracking methods
 
 const app = express();
 app.use(cors());
@@ -24,11 +22,13 @@ app.post("/crack", async (req, res) => {
             return res.status(400).json({ error: "Missing required parameters" });
         }
 
-        let result;
+        let result = null;
         if (method === "brute-force") {
             result = bruteForceCrack(hash, algorithm);
         } else if (method === "dictionary") {
             result = dictionaryAttack(hash, algorithm, dictionaryFile);
+        } else {
+            return res.status(400).json({ error: "Invalid method" });
         }
 
         if (result) {
@@ -37,6 +37,7 @@ app.post("/crack", async (req, res) => {
             res.json({ success: false, message: "Password not found" });
         }
     } catch (error) {
+        console.error("Server Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
