@@ -22,6 +22,8 @@ function compareHash(password, hashedPassword, algorithm = "sha256") {
 
 // Brute-force attack: Tries all possible combinations (limited for simplicity)
 function bruteForceCrack(hash, algorithm = "sha256") {
+    console.log("🔍 Brute-force cracking:", hash, "using", algorithm);
+    
     const charset = "abcdefghijklmnopqrstuvwxyz0123456789";
     const maxLength = 4; // Adjust as needed
 
@@ -41,16 +43,41 @@ function bruteForceCrack(hash, algorithm = "sha256") {
 
 // Dictionary attack: Checks a list of common passwords
 function dictionaryAttack(hash, algorithm = "sha256", dictionaryFile = "dictionary.txt") {
-    if (!fs.existsSync(dictionaryFile)) return null;
+    console.log("📖 Dictionary attack started for:", hash, "using", algorithm);
 
-    const words = fs.readFileSync(dictionaryFile, "utf8").split("\n");
-    for (let word of words) {
-        word = word.trim();
-        if (hashPassword(word, algorithm) === hash) {
-            return word;
-        }
+    // Check if the dictionary file exists
+    if (!fs.existsSync(dictionaryFile)) {
+        console.error("⚠️ Dictionary file not found:", dictionaryFile);
+        return null;
     }
-    return null;
+
+    try {
+        const words = fs.readFileSync(dictionaryFile, "utf8").split("\n");
+
+        for (let password of words) {
+            password = password.trim(); // Remove extra spaces
+
+            // Handle bcrypt separately
+            if (algorithm === "bcrypt") {
+                if (bcrypt.compareSync(password, hash)) {
+                    console.log("✅ Password found:", password);
+                    return password;
+                }
+            } else {
+                let hashedPassword = crypto.createHash(algorithm).update(password).digest("hex");
+                if (hashedPassword === hash) {
+                    console.log("✅ Password found:", password);
+                    return password;
+                }
+            }
+        }
+
+        console.log("❌ Password not found in dictionary");
+        return null;
+    } catch (error) {
+        console.error("⚠️ Error reading dictionary file:", error.message);
+        return null;
+    }
 }
 
 // Export the functions
