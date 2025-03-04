@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 
-const { bruteForceCrack, dictionaryAttack } = require("./methods"); // Import cracking methods
+const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods"); // Import cracking methods
 
 const app = express();
 app.use(cors());
@@ -27,15 +27,17 @@ app.post("/crack", async (req, res) => {
             result = bruteForceCrack(hash, algorithm);
         } else if (method === "dictionary") {
             result = dictionaryAttack(hash, algorithm, dictionaryFile);
+        } else if (method === "rainbow-table") {
+            result = rainbowTableAttack(hash, algorithm);
         } else {
             return res.status(400).json({ error: "Invalid method" });
         }
 
-        if (result) {
-            res.json({ success: true, password: result });
-        } else {
-            res.json({ success: false, message: "Password not found" });
-        }
+        res.json({
+            success: result !== "Password not found",
+            password: result
+        });
+
     } catch (error) {
         console.error("Server Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
