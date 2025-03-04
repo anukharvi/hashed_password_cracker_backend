@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods"); // Import cracking methods
 
@@ -8,9 +10,36 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const users = []; // Temporary in-memory storage (Use MongoDB for production)
+
 // ✅ Root Route (Fixes "Cannot GET /" error)
 app.get("/", (req, res) => {
     res.send("Backend is running! 🚀");
+});
+
+// ✅ User Signup API
+app.post("/signup", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: "Username and password are required" });
+        }
+
+        // Check if user already exists
+        if (users.find(user => user.username === username)) {
+            return res.status(400).json({ error: "User already exists" });
+        }
+
+        // Hash password before storing
+        const hashedPassword = await bcrypt.hash(password, 10);
+        users.push({ username, password: hashedPassword });
+
+        res.status(201).json({ message: "User registered successfully" });
+    } catch (error) {
+        console.error("Signup Error:", error.message);
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
 });
 
 // ✅ Crack Password API
