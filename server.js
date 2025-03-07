@@ -21,12 +21,14 @@ app.post("/signup", async (req, res) => {
     try {
         const { username, password } = req.body;
 
+        // Validate input
         if (!username || !password) {
             return res.status(400).json({ error: "Username and password are required" });
         }
 
         // Check if user already exists
-        if (users.find(user => user.username === username)) {
+        const userExists = users.some(user => user.username === username);
+        if (userExists) {
             return res.status(400).json({ error: "User already exists" });
         }
 
@@ -44,31 +46,36 @@ app.post("/signup", async (req, res) => {
 // ✅ Crack Password API (With Loading Simulation)
 app.post("/crack", async (req, res) => {
     try {
-        const { hash, algorithm, method, dictionaryFile } = req.body;
+        const { hash, algorithm, method } = req.body;
 
+        // Validate input
         if (!hash || !algorithm || !method) {
             return res.status(400).json({ error: "Missing required parameters" });
         }
 
-        // ✅ Remove SHA-512 Support
+        // Validate algorithm
         const supportedAlgorithms = ["md5", "sha1", "sha256"];
         if (!supportedAlgorithms.includes(algorithm)) {
             return res.status(400).json({ error: "Invalid algorithm. Only MD5, SHA-1, and SHA-256 are supported." });
         }
 
+        // Perform cracking based on method
         let result = null;
-
-        if (method === "brute-force") {
-            result = bruteForceCrack(hash, algorithm);
-        } else if (method === "dictionary") {
-            result = dictionaryAttack(hash, algorithm, dictionaryFile);
-        } else if (method === "rainbow-table") {
-            result = rainbowTableAttack(hash, algorithm);
-        } else {
-            return res.status(400).json({ error: "Invalid method" });
+        switch (method) {
+            case "brute-force":
+                result = bruteForceCrack(hash, algorithm);
+                break;
+            case "dictionary":
+                result = dictionaryAttack(hash, algorithm);
+                break;
+            case "rainbow-table":
+                result = rainbowTableAttack(hash, algorithm);
+                break;
+            default:
+                return res.status(400).json({ error: "Invalid method" });
         }
 
-        // ✅ Simulate Loading (1.5s delay)
+        // Simulate loading delay (1.5 seconds)
         setTimeout(() => {
             res.json({
                 success: result !== "Password not found",
