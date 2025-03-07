@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 
 const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods"); // Import cracking methods
 
@@ -42,7 +41,7 @@ app.post("/signup", async (req, res) => {
     }
 });
 
-// ✅ Crack Password API
+// ✅ Crack Password API (With Loading Simulation)
 app.post("/crack", async (req, res) => {
     try {
         const { hash, algorithm, method, dictionaryFile } = req.body;
@@ -51,7 +50,14 @@ app.post("/crack", async (req, res) => {
             return res.status(400).json({ error: "Missing required parameters" });
         }
 
+        // ✅ Remove SHA-512 Support
+        const supportedAlgorithms = ["md5", "sha1", "sha256"];
+        if (!supportedAlgorithms.includes(algorithm)) {
+            return res.status(400).json({ error: "Invalid algorithm. Only MD5, SHA-1, and SHA-256 are supported." });
+        }
+
         let result = null;
+
         if (method === "brute-force") {
             result = bruteForceCrack(hash, algorithm);
         } else if (method === "dictionary") {
@@ -62,10 +68,13 @@ app.post("/crack", async (req, res) => {
             return res.status(400).json({ error: "Invalid method" });
         }
 
-        res.json({
-            success: result !== "Password not found",
-            password: result
-        });
+        // ✅ Simulate Loading (1.5s delay)
+        setTimeout(() => {
+            res.json({
+                success: result !== "Password not found",
+                password: result
+            });
+        }, 1500);
 
     } catch (error) {
         console.error("Server Error:", error.message);
