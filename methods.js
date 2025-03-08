@@ -82,10 +82,39 @@ function dictionaryAttack(hash, algorithm = "sha256", dictionaryFile = "dictiona
     }
 }
 
-// ✅ Rainbow table attack (Placeholder for future implementation)
-function rainbowTableAttack(hash, algorithm = "sha256") {
-    console.log("🌈 Rainbow table attack not implemented yet for:", hash, "using", algorithm);
-    return "Error: Rainbow table attack not implemented";
+// ✅ Rainbow table attack (Fully implemented)
+function rainbowTableAttack(hash, algorithm = "sha256", rainbowTableFile = "rainbow-table.txt") {
+    const filePath = path.join(__dirname, rainbowTableFile); // Get full path to rainbow table file
+    console.log("🌈 Looking for rainbow table file at:", filePath);
+
+    // Ensure rainbow table file exists
+    if (!fs.existsSync(filePath)) {
+        console.error("⚠️ Rainbow table file NOT found at:", filePath);
+        return "Error: Rainbow table file missing";
+    }
+
+    try {
+        // Read rainbow table file with UTF-8 encoding
+        const table = fs.readFileSync(filePath, { encoding: "utf8", flag: "r" }).split("\n");
+
+        // Search for the hash in the table
+        for (let entry of table) {
+            entry = entry.trim(); // Remove extra spaces and line breaks
+            if (!entry) continue; // Skip empty lines
+
+            const [hashedPassword, password] = entry.split(":"); // Split hash and password
+            if (hashedPassword === hash) {
+                console.log("✅ Password found in rainbow table:", password);
+                return password; // Return the cracked password
+            }
+        }
+
+        console.log("❌ Password not found in rainbow table");
+        return "Password not found";
+    } catch (error) {
+        console.error("⚠️ Error reading rainbow table file:", error.message);
+        return "Error: Unable to read rainbow table file";
+    }
 }
 
 // ✅ Export functions
