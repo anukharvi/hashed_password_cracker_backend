@@ -13,6 +13,9 @@ app.use(bodyParser.json());
 
 // ✅ Debugging: Check if MONGO_URI is loaded
 console.log("🔍 Debugging: MONGO_URI =", process.env.MONGO_URI);
+require("dotenv").config({ path: __dirname + "/.env" });
+console.log("✅ MONGO_URI Loaded:", process.env.MONGO_URI); // Debugging log
+
 
 if (!process.env.MONGO_URI) {
     console.error("❌ ERROR: MONGO_URI is not set in environment variables!");
