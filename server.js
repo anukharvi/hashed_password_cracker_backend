@@ -11,12 +11,21 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Connect to MongoDB
+// ✅ Debugging: Check if MONGO_URI is loaded
+if (!process.env.MONGO_URI) {
+    console.error("❌ ERROR: MONGO_URI is not set in .env file!");
+    process.exit(1);
+}
+
+// ✅ Connect to MongoDB with better error handling
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).then(() => console.log("✅ Connected to MongoDB"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+  .catch(err => {
+      console.error("❌ MongoDB Connection Error:", err.message);
+      process.exit(1);
+  });
 
 // ✅ User Model
 const User = mongoose.model("User", new mongoose.Schema({
@@ -57,7 +66,7 @@ app.post("/signup", async (req, res) => {
 
         res.status(201).json({ message: "User registered successfully!!" });
     } catch (error) {
-        console.error("Signup Error:", error.message);
+        console.error("❌ Signup Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
@@ -79,6 +88,7 @@ app.post("/crack", async (req, res) => {
         // ✅ Check if the hash was cracked before
         const existingCracked = await CrackedPassword.findOne({ hash });
         if (existingCracked) {
+            console.log(`🔍 Retrieved from database: ${existingCracked.password}`);
             return res.json({ success: true, password: existingCracked.password });
         }
 
@@ -109,11 +119,11 @@ app.post("/crack", async (req, res) => {
         }, 1500);
 
     } catch (error) {
-        console.error("Server Error:", error.message);
+        console.error("❌ Server Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
 
-// ✅ Start the server
-const PORT = process.env.PORT || 5000; // Dynamic port for deployment
+// ✅ Start the server with error handling
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
