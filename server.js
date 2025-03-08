@@ -3,7 +3,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-require("dotenv").config(); // ✅ Load environment variables
+require("dotenv").config();
 
 const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods");
 
@@ -16,19 +16,18 @@ console.log("🔍 Debugging: MONGO_URI =", process.env.MONGO_URI);
 
 if (!process.env.MONGO_URI) {
     console.error("❌ ERROR: MONGO_URI is not set in environment variables!");
-    process.exit(1); // Stop execution if MongoDB URI is missing
+    process.exit(1);
 }
 
 // ✅ Connect to MongoDB with error handling
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-})
-    .then(() => console.log("✅ Connected to MongoDB"))
-    .catch(err => {
-        console.error("❌ MongoDB Connection Error:", err.message);
-        process.exit(1);
-    });
+}).then(() => console.log("✅ Connected to MongoDB"))
+  .catch(err => {
+      console.error("❌ MongoDB Connection Error:", err.message);
+      process.exit(1);
+  });
 
 // ✅ User Model
 const User = mongoose.model("User", new mongoose.Schema({
@@ -49,6 +48,17 @@ app.get("/", (req, res) => {
     res.send("✅ Backend is running! 🚀");
 });
 
+// ✅ Password Strength Validation
+const isStrongPassword = (password) => {
+    const minLength = 6;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[@$!%*?&]/.test(password);
+
+    return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+};
+
 // ✅ User Signup API (Saves to MongoDB)
 app.post("/signup", async (req, res) => {
     try {
@@ -56,6 +66,13 @@ app.post("/signup", async (req, res) => {
 
         if (!username || !password) {
             return res.status(400).json({ error: "Username and password are required" });
+        }
+
+        // Validate password strength
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({
+                error: "Weak password! Must be at least 6 characters with uppercase, lowercase, number, and special character."
+            });
         }
 
         const existingUser = await User.findOne({ username });
