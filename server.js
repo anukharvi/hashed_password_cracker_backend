@@ -3,7 +3,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-require("dotenv").config();
+require("dotenv").config(); // ✅ Load environment variables
 
 const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods");
 
@@ -11,22 +11,24 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Debugging: Check if MONGO_URI is loaded
+// ✅ Debugging: Check if MONGO_URI is loaded correctly
 console.log("🔍 Debugging: MONGO_URI =", process.env.MONGO_URI);
-require("dotenv").config({ path: __dirname + "/.env" });
-console.log("✅ MONGO_URI Loaded:", process.env.MONGO_URI); // Debugging log
-
 
 if (!process.env.MONGO_URI) {
     console.error("❌ ERROR: MONGO_URI is not set in environment variables!");
+    process.exit(1); // Stop execution if MongoDB URI is missing
 }
 
-// ✅ Connect to MongoDB with better error handling
+// ✅ Connect to MongoDB with error handling
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
+    useUnifiedTopology: true
 })
     .then(() => console.log("✅ Connected to MongoDB"))
-    .catch(err => console.error("❌ MongoDB Connection Error:", err.message));
+    .catch(err => {
+        console.error("❌ MongoDB Connection Error:", err.message);
+        process.exit(1);
+    });
 
 // ✅ User Model
 const User = mongoose.model("User", new mongoose.Schema({
@@ -68,6 +70,32 @@ app.post("/signup", async (req, res) => {
         res.status(201).json({ message: "✅ User registered successfully!" });
     } catch (error) {
         console.error("❌ Signup Error:", error.message);
+        res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
+});
+
+// ✅ User Login API
+app.post("/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: "Username and password are required" });
+        }
+
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ error: "User not found" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: "Invalid credentials" });
+        }
+
+        res.status(200).json({ message: "✅ Login successful!" });
+    } catch (error) {
+        console.error("❌ Login Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
 });
