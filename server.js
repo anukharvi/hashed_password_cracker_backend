@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods"); // Import cracking methods
+const { bruteForceCrack, dictionaryAttack, rainbowTableAttack } = require("./methods");
 
 const app = express();
 app.use(cors());
@@ -19,8 +19,7 @@ if (!process.env.MONGO_URI) {
 
 // ✅ Connect to MongoDB with better error handling
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+    useNewUrlParser: true
 }).then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => {
       console.error("❌ MongoDB Connection Error:", err.message);
@@ -46,7 +45,7 @@ app.get("/", (req, res) => {
     res.send("Backend is running! 🚀");
 });
 
-// ✅ User Signup API (Now Saves to MongoDB)
+// ✅ User Signup API (Saves to MongoDB)
 app.post("/signup", async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -71,7 +70,7 @@ app.post("/signup", async (req, res) => {
     }
 });
 
-// ✅ Crack Password API (Now Saves Cracked Passwords in MongoDB)
+// ✅ Crack Password API (Saves Cracked Passwords in MongoDB)
 app.post("/crack", async (req, res) => {
     try {
         const { hash, algorithm, method } = req.body;
@@ -92,7 +91,7 @@ app.post("/crack", async (req, res) => {
             return res.json({ success: true, password: existingCracked.password });
         }
 
-        let result = null;
+        let result;
         switch (method) {
             case "brute-force":
                 result = bruteForceCrack(hash, algorithm);
@@ -109,14 +108,10 @@ app.post("/crack", async (req, res) => {
 
         // ✅ Save cracked password in MongoDB if found
         if (result !== "Password not found") {
-            const newCracked = new CrackedPassword({ hash, password: result, algorithm });
-            await newCracked.save();
+            await CrackedPassword.create({ hash, password: result, algorithm });
         }
 
-        // ✅ Simulate loading delay (1.5 seconds)
-        setTimeout(() => {
-            res.json({ success: result !== "Password not found", password: result });
-        }, 1500);
+        res.json({ success: result !== "Password not found", password: result });
 
     } catch (error) {
         console.error("❌ Server Error:", error.message);
