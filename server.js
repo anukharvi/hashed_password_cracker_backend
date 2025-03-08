@@ -12,19 +12,18 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ✅ Debugging: Check if MONGO_URI is loaded
+console.log("🔍 Debugging: MONGO_URI =", process.env.MONGO_URI);
+
 if (!process.env.MONGO_URI) {
-    console.error("❌ ERROR: MONGO_URI is not set in .env file!");
-    process.exit(1);
+    console.error("❌ ERROR: MONGO_URI is not set in environment variables!");
 }
 
 // ✅ Connect to MongoDB with better error handling
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true
-}).then(() => console.log("✅ Connected to MongoDB"))
-  .catch(err => {
-      console.error("❌ MongoDB Connection Error:", err.message);
-      process.exit(1);
-  });
+    useNewUrlParser: true,
+})
+    .then(() => console.log("✅ Connected to MongoDB"))
+    .catch(err => console.error("❌ MongoDB Connection Error:", err.message));
 
 // ✅ User Model
 const User = mongoose.model("User", new mongoose.Schema({
@@ -40,9 +39,9 @@ const CrackedPassword = mongoose.model("CrackedPassword", new mongoose.Schema({
     crackedAt: { type: Date, default: Date.now }
 }));
 
-// ✅ Root Route (Fixes "Cannot GET /" error)
+// ✅ Root Route
 app.get("/", (req, res) => {
-    res.send("Backend is running! 🚀");
+    res.send("✅ Backend is running! 🚀");
 });
 
 // ✅ User Signup API (Saves to MongoDB)
@@ -63,7 +62,7 @@ app.post("/signup", async (req, res) => {
         const newUser = new User({ username, password: hashedPassword });
         await newUser.save();
 
-        res.status(201).json({ message: "User registered successfully!!" });
+        res.status(201).json({ message: "✅ User registered successfully!" });
     } catch (error) {
         console.error("❌ Signup Error:", error.message);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
@@ -90,6 +89,8 @@ app.post("/crack", async (req, res) => {
             console.log(`🔍 Retrieved from database: ${existingCracked.password}`);
             return res.json({ success: true, password: existingCracked.password });
         }
+
+        console.log(`🔎 Cracking hash: ${hash} using method: ${method}`);
 
         let result;
         switch (method) {
